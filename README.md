@@ -19,8 +19,17 @@ ROS 2 and Flask application for detecting playing-card orientation changes with 
 
 - `v1/`: first stable version.
 - `v2/`: second stable version.
+- `v3/`: latest stable version.
 
 The main program logic is the same across versions: each version is started from its own `run.py` file.
+
+`v2` rescans cards after odom closed-loop 180° turns and cross-matches the
+check scan against the references, comparing each card in normal vs 180°
+orientation. `v3` adds floor placement: the cards lie flat on the floor and the
+fixed forward camera views them at an angle, so each detected card is
+perspective-rectified (warped to a head-on canonical rectangle) before
+matching, and a high-res central-pip cue refines the orientation verdict for
+low-detail or near-symmetric cards.
 
 ## Project Structure
 
@@ -39,7 +48,22 @@ magic_card/
 │       ├── templates.py
 │       ├── utils.py
 │       └── web.py
-└── v2/
+├── v2/
+│   ├── run.py
+│   └── app/
+│       ├── __init__.py
+│       ├── __main__.py
+│       ├── camera_node.py
+│       ├── config.py
+│       ├── detector.py
+│       ├── logger.py
+│       ├── main.py
+│       ├── state.py
+│       ├── templates.py
+│       ├── utils.py
+│       ├── web.py
+│       └── workflow.py
+└── v3/
     ├── run.py
     └── app/
         ├── __init__.py
@@ -68,8 +92,10 @@ magic_card/
 - `v2/app/camera_node.py`: V2 ROS node for camera, odometry, motor power, battery, and motion control.
 - `v2/app/detector.py`: V2 card segmentation, contour filtering, crop extraction, and debug overlay generation.
 - `v2/app/workflow.py`: V2 scan, turn, rescan, cross-match, and 180-degree rotation detection workflow.
-- `v2/app/state.py`: shared runtime state for camera frames, detected slots, workflow status, and UI data.
-- `v2/app/logger.py`: runtime logging and saved image output helpers.
+- `v3/app/detector.py`: V3 detector for floor-placed cards; minAreaRect geometry, frame-border rejection, and per-card perspective rectification to a head-on canonical crop.
+- `v3/app/workflow.py`: V3 workflow with the center-fine central-pip orientation override for low-detail / near-symmetric cards.
+- `app/state.py`: shared runtime state for camera frames, detected slots, workflow status, and UI data.
+- `app/logger.py`: runtime logging and saved image output helpers.
 
 ## Run
 
@@ -100,6 +126,13 @@ For version 2:
 
 ```bash
 cd v2
+python3 run.py
+```
+
+For version 3:
+
+```bash
+cd v3
 python3 run.py
 ```
 
